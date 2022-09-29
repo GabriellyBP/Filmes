@@ -7,29 +7,29 @@ import br.com.gabrielly.dao.UsuarioDAO;
 import br.com.gabrielly.entidade.Filmes;
 import br.com.gabrielly.entidade.Usuario;
 import br.com.gabrielly.util.Base;
+import java.awt.Image;
+import java.awt.Toolkit;
+import java.net.URL;
 import java.text.DecimalFormat;
 import java.util.List;
 import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
 
 
-    /*
+/*
        Classe principal, onde tem o form e os metodos das telas.
-    */
-
+ */
 public class CatalogoFilmes extends javax.swing.JFrame {
-    
+
     //variaveis globais para conter a pagina e a ultima pagina.
-    private int pagina, ultimaPagina;
+    private int pagina, ultimaPagina = 2;
 
     //metodo para inicializar os componentes e carregar a primeira tela.
     public CatalogoFilmes() {
         initComponents();
-        //jpCriarFilmes.setVisible(false);
         //InicializaBD.inicializarBD();
         OperacaoBD.conectar();
         pagina = 1;
-        ultimaPagina = FilmesDAO.qtasPaginas();
         mostraRegistros();
     }
 
@@ -311,17 +311,27 @@ public class CatalogoFilmes extends javax.swing.JFrame {
     private void jbCadastrarFilmesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbCadastrarFilmesActionPerformed
         String nomeFilme = JOptionPane.showInputDialog("Digite o nome do filme: ");
         if (nomeFilme == null || nomeFilme.isEmpty()) {
-            Base.mensagem("O nome do filme não pode ser vazio");
+            Base.mensagem("O Nome do filme não pode ser vazio");
         } else {
-            int p = FilmesDAO.qtasPaginas();
-            pagina = (int) Math.ceil(p / 10) + 1;
-            double nota = 0.0;
-            FilmesDAO.inserir(new Filmes(nomeFilme, pagina, nota, 0));
-            ultimaPagina = pagina;
-            mostraRegistros();
-            Base.mensagem("Contato salvo com sucesso:\n" + nomeFilme);
+            int adicionado = 0;
+            List<Filmes> listaFilmes = FilmesDAO.selecionarTodos();
+            for (Filmes f : listaFilmes) {
+                if (nomeFilme.equals(f.getNome())) {
+                    Base.mensagem("Nome do filme ja existe. \n" + nomeFilme);
+                    adicionado = 1;
+                    break;
+                }
+            }
+            if (adicionado == 0) {
+                int p = FilmesDAO.qtasPaginas();
+                pagina = (int) Math.ceil(p / 10) + 1;
+                double nota = 0.0;
+                FilmesDAO.inserir(new Filmes(nomeFilme, pagina, nota, 0));
+                ultimaPagina = pagina;
+                mostraRegistros();
+                Base.mensagem("Filme salvo com sucesso:\n" + nomeFilme);
+            }
         }
-
     }//GEN-LAST:event_jbCadastrarFilmesActionPerformed
 
     //metodo para avancar uma pagina
@@ -359,7 +369,7 @@ public class CatalogoFilmes extends javax.swing.JFrame {
             Filmes filme = FilmesDAO.getFilmePorId(id);
             FilmesDAO.apagar(filme);
             mostraRegistros();
-            Base.mensagem("Filme deletado com sucesso\n");
+            Base.mensagem("Filme deletado com sucesso:\n" + filme.getNome());
         } else {
             Base.mensagem("Selecionar algum filme\n");
         }
@@ -371,7 +381,7 @@ public class CatalogoFilmes extends javax.swing.JFrame {
         int selecionado = jtFilmes.getSelectedRow();
         if (selecionado >= 0) {
             String nomeUsuario = JOptionPane.showInputDialog("Digite o nome do Usuario: ");
-            String avaliacao = JOptionPane.showInputDialog("Digite o a avaliacao para o filme selecionado: ");
+            String avaliacao = JOptionPane.showInputDialog("Digite uma avaliacao para o filme selecionado: ");
             String n;
             int nota = 0;
             do {
@@ -389,15 +399,41 @@ public class CatalogoFilmes extends javax.swing.JFrame {
                 nota = 0;
                 Base.mensagem("Você esqueceu de digitar alguma informacao!");
             } else {
-                Filmes filme = FilmesDAO.getFilmePorId(id);
-                UsuarioDAO.inserir(new Usuario(filme, nomeUsuario, nota, avaliacao));
-                int qtdeA = filme.getQtdeAvaliacao() + 1;
-                double nA = filme.getNotaAvaliacao() + nota;
-                filme.setNotaAvaliacao(nA);
-                filme.setQtdeAvaliacao(qtdeA);
-                FilmesDAO.avaliar(filme);
-                mostraRegistros();
-                Base.mensagem("Filme avaliado com sucesso\n");
+                int adicionado = 0;
+                int option = 0;
+                List<Usuario> listaU = UsuarioDAO.selecionarPorFilme(id);
+                for (Usuario us : listaU) {
+                    if (nomeUsuario.equals(us.getNome())) {
+                        option = JOptionPane.showInternalConfirmDialog(null, "Usuario ja avaliou o filme, deseja editar a avaliacao?");
+                        if (option == 0) {
+                            Filmes filme = FilmesDAO.getFilmePorId(id);
+                            double notaAFilme = filme.getNotaAvaliacao() - us.getNota();
+                            notaAFilme += nota;
+                            filme.setNotaAvaliacao(notaAFilme);
+                            UsuarioDAO.alterar(new Usuario(us.getId(), filme, nomeUsuario, nota, avaliacao));
+                            FilmesDAO.avaliar(filme);
+                            mostrarUsuario();
+                            mostraRegistros();
+                            Base.mensagem("Usuario editado com sucesso: \n" + nomeUsuario);
+                            adicionado = 1;
+                            break;
+                        } else {
+                            Base.mensagem("Você desistiu de atualizar o contato.\n" + nomeUsuario);
+                        }
+
+                    }
+                }
+                if (adicionado == 0 && option == 0) {
+                    Filmes filme = FilmesDAO.getFilmePorId(id);
+                    UsuarioDAO.inserir(new Usuario(filme, nomeUsuario, nota, avaliacao));
+                    int qtdeA = filme.getQtdeAvaliacao() + 1;
+                    double nA = filme.getNotaAvaliacao() + nota;
+                    filme.setNotaAvaliacao(nA);
+                    filme.setQtdeAvaliacao(qtdeA);
+                    FilmesDAO.avaliar(filme);
+                    mostraRegistros();
+                    Base.mensagem("Filme avaliado com sucesso: \n" + filme.getNome());
+                }
             }
 
         } else {
@@ -405,28 +441,28 @@ public class CatalogoFilmes extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_jbAvaliarActionPerformed
 
-     //metodo para editar o filme, somnete o nome do mesmo
+    //metodo para editar o filme, somnete o nome do mesmo
     private void jbEditFilmeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbEditFilmeActionPerformed
 
         int selecionado = jtFilmes.getSelectedRow();
         if (selecionado >= 0) {
             String nome = jtFilmes.getValueAt(jtFilmes.getSelectedRow(), 1).toString();
             int id = Integer.parseInt(jtFilmes.getValueAt(jtFilmes.getSelectedRow(), 0).toString());
-            String nota = jtFilmes.getValueAt(jtFilmes.getSelectedRow(), 2).toString();
-            double nA = Double.parseDouble(nota);
+            String nota = jtFilmes.getValueAt(jtFilmes.getSelectedRow(), 2).toString().split("\\,")[1];
+            double nA = Double.valueOf(nota);
             int qtdeAvaliacao = Integer.parseInt(jtFilmes.getValueAt(jtFilmes.getSelectedRow(), 3).toString());
 
             String nomeFilme = JOptionPane.showInputDialog("Deseja alterar o nome do filme:\n", nome);
-            
+
             if (nomeFilme == null || nomeFilme.isEmpty()) {
-                Base.mensagem("O nome do filme não pode ser vazio");
+                Base.mensagem("O Nome do filme não pode ser vazio:");
             } else {
                 FilmesDAO.alterar(new Filmes(id, nomeFilme, nA, qtdeAvaliacao));
                 mostraRegistros();
-                Base.mensagem("Filme editado com sucesso\n");
+                Base.mensagem("Filme editado com sucesso\n" + nomeFilme);
             }
         } else {
-            Base.mensagem("Selecionar algum filme\n");
+            Base.mensagem("Selecionar algum filme:\n");
         }
     }//GEN-LAST:event_jbEditFilmeActionPerformed
 
@@ -449,7 +485,7 @@ public class CatalogoFilmes extends javax.swing.JFrame {
             UsuarioDAO.apagar(new Usuario(idUsuario, filme, nomeFilme, nota, avaliacao));
             mostrarUsuario();
             mostraRegistros();
-            Base.mensagem("Usuario deletado com sucesso\n");
+            Base.mensagem("Usuario deletado com sucesso: \n" + nomeUsuario);
         } else {
             Base.mensagem("Selecionar Usuario\n");
         }
@@ -462,14 +498,13 @@ public class CatalogoFilmes extends javax.swing.JFrame {
         if (selecionado >= 0) {
             int id = Integer.parseInt(jtUsuarios.getValueAt(jtUsuarios.getSelectedRow(), 0).toString());
             int idFilmes = Integer.parseInt(jtUsuarios.getValueAt(jtUsuarios.getSelectedRow(), 1).toString());
-            String nomeFilme = jtUsuarios.getValueAt(jtUsuarios.getSelectedRow(), 2).toString();
             String nome = jtUsuarios.getValueAt(jtUsuarios.getSelectedRow(), 3).toString();
             int nota = Integer.parseInt(jtUsuarios.getValueAt(jtUsuarios.getSelectedRow(), 4).toString());
             String avaliacao = jtUsuarios.getValueAt(jtUsuarios.getSelectedRow(), 5).toString();
 
             String nomeUsuario = JOptionPane.showInputDialog("Deseja alterar o nome do usuario:\n", nome);
             String novaAvaliacao = JOptionPane.showInputDialog("Deseja alterar a avaliacao:\n", avaliacao);
- 
+
             String n;
             int notaAvaliacao = 0;
             do {
@@ -480,7 +515,7 @@ public class CatalogoFilmes extends javax.swing.JFrame {
                     Base.mensagem("Digite uma nota com valor entre 1 e 5.\n");
                 }
             } while (!n.matches("[0-9]"));
-            
+
             if (nomeUsuario == null || nomeUsuario.isEmpty() && novaAvaliacao == null || novaAvaliacao.isEmpty() || notaAvaliacao > 5 || notaAvaliacao < 0) {
                 Base.mensagem("Você esqueceu de digitar alguma informacao!");
             } else {
@@ -492,7 +527,7 @@ public class CatalogoFilmes extends javax.swing.JFrame {
                 FilmesDAO.avaliar(filme);
                 mostrarUsuario();
                 mostraRegistros();
-                Base.mensagem("Usuario editado com sucesso\n");
+                Base.mensagem("Usuario editado com sucesso: \n" + nomeUsuario);
             }
         } else {
             Base.mensagem("Selecionar Usuario\n");
