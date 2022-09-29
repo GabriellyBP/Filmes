@@ -28,7 +28,8 @@ public class InicializaBD {
                 + "idFilme int not null, "
                 + "nome varchar(30) not null, "
                 + "nota int not null, "
-                + "avaliacao varchar(50) not null)";
+                + "avaliacao varchar(50) not null, "
+                + "foreign key (idFilme) references filme(id))";
         execute(con, sql);
 
         sql = "Insert into filme (nome, pagina, notaAvaliacao, qtdeAvaliacao ) values ('Homem Aranha', '1', '5', '1')";

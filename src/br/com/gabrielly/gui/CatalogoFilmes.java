@@ -7,9 +7,6 @@ import br.com.gabrielly.dao.UsuarioDAO;
 import br.com.gabrielly.entidade.Filmes;
 import br.com.gabrielly.entidade.Usuario;
 import br.com.gabrielly.util.Base;
-import java.awt.Image;
-import java.awt.Toolkit;
-import java.net.URL;
 import java.text.DecimalFormat;
 import java.util.List;
 import javax.swing.JOptionPane;
@@ -27,7 +24,7 @@ public class CatalogoFilmes extends javax.swing.JFrame {
     //metodo para inicializar os componentes e carregar a primeira tela.
     public CatalogoFilmes() {
         initComponents();
-        //InicializaBD.inicializarBD();
+        InicializaBD.inicializarBD();
         OperacaoBD.conectar();
         pagina = 1;
         mostraRegistros();
