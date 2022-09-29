@@ -24,7 +24,7 @@ public class CatalogoFilmes extends javax.swing.JFrame {
     //metodo para inicializar os componentes e carregar a primeira tela.
     public CatalogoFilmes() {
         initComponents();
-        InicializaBD.inicializarBD();
+        //InicializaBD.inicializarBD();
         OperacaoBD.conectar();
         pagina = 1;
         mostraRegistros();
@@ -469,11 +469,12 @@ public class CatalogoFilmes extends javax.swing.JFrame {
         int selecionado = jtUsuarios.getSelectedRow();
         if (selecionado >= 0) {
             int idUsuario = Integer.parseInt(jtUsuarios.getValueAt(jtUsuarios.getSelectedRow(), 0).toString());
+            int idFilme = Integer.parseInt(jtUsuarios.getValueAt(jtUsuarios.getSelectedRow(), 1).toString());
             String nomeFilme = jtUsuarios.getValueAt(jtUsuarios.getSelectedRow(), 2).toString();
             String nomeUsuario = jtUsuarios.getValueAt(jtUsuarios.getSelectedRow(), 3).toString();
             int nota = Integer.parseInt(jtUsuarios.getValueAt(jtUsuarios.getSelectedRow(), 4).toString());
             String avaliacao = jtUsuarios.getValueAt(jtUsuarios.getSelectedRow(), 5).toString();
-            Filmes filme = FilmesDAO.getFilmePorNome(nomeFilme);
+            Filmes filme = FilmesDAO.getFilmePorId(idFilme);
             int qtdeA = filme.getQtdeAvaliacao() - 1;
             double nA = filme.getNotaAvaliacao() - nota;
             filme.setNotaAvaliacao(nA);
